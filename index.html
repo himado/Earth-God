@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đảo Sáng Thế</title>
+<style>
+  :root {
+    --panel: rgba(12, 16, 30, 0.8);
+    --panel-border: rgba(150, 180, 255, 0.16);
+    --text: #e6ecff;
+    --muted: #93a0c4;
+    --accent: #ffd27a;
+    --accent-2: #7cc8ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05070f; color: var(--text);
+    font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #app canvas { display: block; }
+  .panel { position: fixed; background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,.45); }
+  h2 { margin: 0 0 8px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  button { font: inherit; color: inherit; }
+
+  /* ---- thanh trên ---- */
+  #topbar { top: 12px; left: 0; right: 0; margin: 0 auto; width: fit-content; max-width: calc(100vw - 24px); display: flex; align-items: center;
+    gap: 12px; padding: 8px 14px; flex-wrap: wrap; justify-content: center; z-index: 3; }
+  #era { min-width: 210px; max-width: 300px; }
+  #eraName { font-size: 16px; font-weight: 700; color: var(--accent); }
+  #eraSub { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #age { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; min-width: 150px; text-align: center; }
+  .seg { display: flex; background: rgba(255,255,255,.05); border-radius: 9px; padding: 2px; }
+  .seg button, .btn { background: transparent; border: 0; padding: 5px 9px; border-radius: 7px; cursor: pointer; }
+  .seg button:hover, .btn:hover { background: rgba(255,255,255,.08); }
+  .seg button.on, .btn.on { background: var(--accent); color: #1a1405; font-weight: 700; }
+  .btn { background: rgba(255,255,255,.06); }
+  label.chk { display: flex; gap: 6px; align-items: center; cursor: pointer; color: var(--muted); font-size: 12px; }
+
+  /* ---- quyền năng ---- */
+  #powers { top: 86px; left: 12px; width: 236px; padding: 12px; max-height: calc(100vh - 190px); overflow: auto; z-index: 2; }
+  #powerGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .power { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-radius: 9px; cursor: pointer; text-align: left;
+    background: rgba(255,255,255,.045); border: 1px solid transparent; font-size: 12px; line-height: 1.2; }
+  .power:hover { background: rgba(255,255,255,.09); }
+  .power.on { border-color: var(--accent); background: rgba(255,210,122,.14); }
+  .power.global { background: rgba(124,200,255,.07); }
+  .power .ic { font-size: 17px; }
+  .power.flash { animation: flash .6s; }
+  @keyframes flash { from { background: rgba(255,210,122,.5); } }
+  .slider { margin-top: 10px; }
+  .slider div { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+  .slider input { width: 100%; accent-color: var(--accent); }
+  #powerDesc { margin: 10px 0 0; color: var(--muted); font-size: 12px; min-height: 48px; }
+  #powerDesc b { color: var(--text); }
+
+  /* ---- thống kê ---- */
+  #stats { top: 86px; right: 12px; width: 310px; padding: 12px; max-height: calc(100vh - 190px); display: flex; flex-direction: column; z-index: 2; }
+  .row { display: grid; grid-template-columns: 138px 1fr 74px; align-items: center; gap: 6px; margin: 2px 0; font-size: 12px; }
+  .row span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .v { text-align: right; font-variant-numeric: tabular-nums; }
+  .bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 3px; transition: width .4s; }
+  #chart { width: 100%; height: 80px; margin-top: 8px; background: rgba(0,0,0,.25); border-radius: 8px; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--muted); margin: 4px 0 10px; }
+  .legend span::before { content: ""; display: inline-block; width: 8px; height: 3px; margin-right: 4px; vertical-align: middle; background: var(--c); }
+  #log { overflow: auto; flex: 1; min-height: 100px; font-size: 12px; padding-right: 4px; }
+  .entry { padding: 4px 0 4px 8px; border-left: 2px solid rgba(255,255,255,.12); margin-bottom: 4px; }
+  .entry small { color: var(--muted); display: block; font-size: 10.5px; }
+  .entry.milestone { border-color: var(--accent); color: #fff3d6; }
+  .entry.history { border-color: #ffb347; color: #ffe9c7; cursor: pointer; }
+  .entry.history:hover { background: rgba(255,179,71,.08); }
+  .entry.god { border-color: var(--accent-2); }
+  .entry.natural { border-color: #8f9bb8; }
+  .entry.chain { border-color: #ff9f6a; }
+  .entry.effect { border-color: transparent; color: var(--muted); padding-top: 0; margin-top: -4px; }
+  .entry.result { border-color: #6fe3a5; color: #c9f7dd; }
+  .entry.extinct { border-color: #ff5d5d; color: #ffc9c9; }
+
+  /* ---- niên đại ---- */
+  #timeline { left: 260px; right: 334px; bottom: 12px; padding: 8px 12px 10px; z-index: 2; }
+  #tlBars { position: relative; height: 34px; }
+  .tlRow { position: absolute; left: 0; right: 0; height: 15px; }
+  .tlRow.eon { top: 0; } .tlRow.per { top: 17px; }
+  .tlSeg { position: absolute; top: 0; height: 100%; font-size: 9.5px; line-height: 15px; color: #111; overflow: hidden; white-space: nowrap;
+    text-overflow: clip; padding-left: 3px; border-right: 1px solid rgba(0,0,0,.35); opacity: .85; }
+  .tlMark { position: absolute; top: -13px; font-size: 11px; transform: translateX(-50%); cursor: help; }
+  #tlNeedle { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #fff; box-shadow: 0 0 8px #fff; pointer-events: none; }
+  #tlMarks { position: relative; height: 12px; }
+  body.hide-left #timeline { left: 12px; } body.hide-right #timeline { right: 12px; }
+
+  /* ---- thẻ sự kiện lịch sử ---- */
+  #card { left: 262px; bottom: 92px; width: min(400px, calc(100vw - 32px)); max-height: 42vh; overflow: auto; padding: 12px 14px; z-index: 6; display: none;
+    border-color: rgba(255,179,71,.5); background: rgba(12, 16, 30, 0.72); }
+  body.hide-left #card { left: 12px; }
+  #card.mini #cardText, #card.mini #cardBtns label { display: none; }
+  #card.mini #cardBtns { margin-top: 6px; }
+  #card.show { display: block; animation: pop .35s ease; }
+  @keyframes pop { from { transform: translateY(-10px); opacity: 0; } }
+  #cardHead { display: flex; gap: 12px; align-items: center; }
+  #cardIcon { font-size: 26px; }
+  #cardTitle { font-size: 15px; font-weight: 700; color: var(--accent); }
+  #cardWhen { color: var(--muted); font-size: 12px; }
+  #cardText { margin: 8px 0 10px; line-height: 1.5; font-size: 12.5px; }
+  #cardBtns { display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+  #cardBtns label { margin-right: auto; }
+
+  /* ---- ẩn/hiện bảng ---- */
+  #powers, #stats { transition: transform .35s ease, opacity .35s; }
+  body.hide-left #powers { transform: translateX(calc(-100% - 24px)); opacity: 0; pointer-events: none; }
+  body.hide-right #stats { transform: translateX(calc(100% + 24px)); opacity: 0; pointer-events: none; }
+  .collapse { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; border: 0; border-radius: 6px; cursor: pointer;
+    background: rgba(255,255,255,.07); color: var(--muted); line-height: 1; }
+  .collapse:hover { background: rgba(255,255,255,.15); color: var(--text); }
+  .edge-tab { position: fixed; top: 50%; transform: translateY(-50%); display: none; padding: 14px 6px; border: 1px solid var(--panel-border);
+    background: var(--panel); cursor: pointer; font-size: 15px; z-index: 4; }
+  #tabLeft { left: 0; border-radius: 0 10px 10px 0; border-left: 0; }
+  #tabRight { right: 0; border-radius: 10px 0 0 10px; border-right: 0; }
+  body.hide-left #tabLeft, body.hide-right #tabRight { display: block; }
+
+  #tooltip { position: fixed; pointer-events: none; padding: 8px 10px; font-size: 12px; display: none; max-width: 300px; z-index: 5; }
+  #tooltip b { color: var(--accent); }
+  #toast { position: fixed; top: 24%; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 700; text-align: center;
+    color: #fff3d6; text-shadow: 0 2px 20px rgba(0,0,0,.9); pointer-events: none; opacity: 0; transition: opacity .6s; max-width: 70vw; z-index: 5; }
+  #toast.show { opacity: 1; }
+  #loading { position: fixed; inset: 0; display: grid; place-items: center; font-size: 16px; color: var(--muted); background: #05070f; z-index: 10; text-align: center; padding: 16px; }
+  #help { inset: 0; margin: auto; width: min(560px, calc(100vw - 32px)); height: fit-content; padding: 18px 20px; z-index: 8; display: none; }
+  #help.show { display: block; }
+  #help ul { padding-left: 18px; margin: 8px 0; }
+  #help p { color: var(--muted); }
+
+  @media (max-width: 1000px) {
+    #powers { top: auto; bottom: 74px; left: 12px; right: 12px; width: auto; max-height: 30vh; }
+    #powerGrid { grid-template-columns: repeat(3, 1fr); }
+    #stats, #tabRight { display: none !important; }
+    #timeline { left: 12px; right: 12px; }
+    #card, body.hide-left #card { left: 12px; right: 12px; width: auto; bottom: auto; top: 76px; max-height: 30vh; }
+    body.hide-left #powers { transform: translateY(calc(100% + 90px)); }
+    #tabLeft { top: auto; bottom: 74px; left: 50%; transform: translateX(-50%); border-radius: 10px 10px 0 0; border: 1px solid var(--panel-border); border-bottom: 0; padding: 6px 18px; }
+    #era { min-width: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<header id="topbar" class="panel">
+  <div id="era"><div id="eraName">—</div><div id="eraSub"></div></div>
+  <div id="age">—</div>
+  <div class="seg" id="speed">
+    <button data-s="0" title="Tạm dừng (Space)">⏸</button>
+    <button data-s="1">1×</button>
+    <button data-s="2" class="on">3×</button>
+    <button data-s="3">10×</button>
+    <button data-s="4">30×</button>
+  </div>
+  <div class="seg" id="zoom">
+    <button id="zoomIn" title="Phóng to (phím +, cuộn chuột, nhấp đúp)">＋</button>
+    <button id="zoomOut" title="Thu nhỏ (phím −)">−</button>
+    <button id="zoomFit" title="Toàn cảnh (phím 0)">⤢</button>
+  </div>
+  <div class="seg" id="views">
+    <button data-v="tac" class="on" title="Góc nhìn chiến thuật (kiểu Clash of Clans)">🏰</button>
+    <button data-v="top" title="Nhìn thẳng từ trên xuống — toàn bộ bản đồ">👁️</button>
+  </div>
+  <button class="btn" id="plateBtn" title="Hiện các mảng kiến tạo: đỏ = hội tụ/hút chìm, vàng = tách giãn, trắng = trượt ngang (phím P)">🧩 Mảng</button>
+  <label class="chk" title="Núi lửa, động đất, bão, hạn hán, thiên thạch nhỏ… tự xảy ra"><input type="checkbox" id="natural" checked> Thiên nhiên</label>
+  <label class="chk" title="Hiện tên các thành phố trong lịch sử"><input type="checkbox" id="cityLabels" checked> Tên thành phố</label>
+  <label class="chk" title="Tự hiện thẻ giải thích khi có sự kiện lịch sử (phím G). Khi tắt vẫn xem được bằng cách bấm vào sự kiện trong Biên niên sử"><input type="checkbox" id="cardsOn" checked> Thẻ giải thích</label>
+  <button class="btn" id="togglePanels" title="Ẩn/hiện 2 bảng bên (phím H)">⛶</button>
+  <button class="btn" id="newWorld" title="Bắt đầu lại từ 4,54 tỷ năm trước">🔄</button>
+  <button class="btn" id="helpBtn">?</button>
+</header>
+
+<aside id="powers" class="panel">
+  <button class="collapse" data-side="left" title="Ẩn bảng">‹</button>
+  <h2>Quyền năng của Thần</h2>
+  <div id="powerGrid"></div>
+  <div class="slider"><div><span>Bán kính</span><span id="rv">9</span></div><input id="radius" type="range" min="2" max="30" step="1" value="9"></div>
+  <div class="slider"><div><span>Cường độ</span><span id="pv">1.0</span></div><input id="power" type="range" min="0.5" max="2.5" step="0.1" value="1"></div>
+  <p id="powerDesc">Lịch sử Trái Đất tự diễn ra đúng như thật. Chọn một quyền năng rồi click lên bản đồ để can thiệp — dòng lịch sử sẽ rẽ nhánh theo trạng thái hành tinh lúc đó.</p>
+</aside>
+
+<aside id="stats" class="panel">
+  <button class="collapse" data-side="right" title="Ẩn bảng">›</button>
+  <h2>Hành tinh</h2>
+  <div id="statGrid"></div>
+  <canvas id="chart" width="572" height="160"></canvas>
+  <div class="legend"><span style="--c:#ff8a5c">Nhiệt độ</span><span style="--c:#c0a0ff">CO₂</span><span style="--c:#e8f6ff">Băng</span><span style="--c:#6fdc6f">Thực vật</span></div>
+  <h2>Biên niên sử</h2>
+  <div id="log"></div>
+</aside>
+
+<div id="timeline" class="panel">
+  <div id="tlMarks"></div>
+  <div id="tlBars"><div class="tlRow eon" id="tlEon"></div><div class="tlRow per" id="tlPer"></div><div id="tlNeedle"></div></div>
+</div>
+
+<div id="card" class="panel">
+  <div id="cardHead"><div id="cardIcon"></div><div><div id="cardTitle"></div><div id="cardWhen"></div></div></div>
+  <div id="cardText"></div>
+  <div id="cardBtns">
+    <label class="chk"><input type="checkbox" id="pauseMajor" checked> Dừng ở các sự kiện lớn</label>
+    <button class="btn" id="cardMini" title="Thu gọn / mở rộng">▾</button>
+    <button class="btn" id="cardOff" title="Không tự hiện thẻ nữa (bật lại ở ô “Thẻ giải thích” trên thanh công cụ, hoặc phím G)">🙈 Ẩn thẻ</button>
+    <button class="btn" id="cardClose">Tiếp tục ▶</button>
+  </div>
+</div>
+
+<button class="edge-tab" id="tabLeft" title="Hiện bảng Quyền năng">⚡</button>
+<button class="edge-tab" id="tabRight" title="Hiện bảng Hành tinh">📊</button>
+<div id="tooltip" class="panel"></div>
+<div id="toast"></div>
+<div id="help" class="panel">
+  <h2>Hướng dẫn</h2>
+  <ul>
+    <li>Bạn đang xem <b>4,54 tỷ năm lịch sử Trái Đất</b>. Nếu không can thiệp, mọi thứ diễn ra như thật và kết thúc ở <b>hôm nay</b>.</li>
+    <li><b>Kéo chuột trái</b>: di chuyển bản đồ · <b>cuộn</b>, <b>＋/−</b>, phím <b>+ / −</b>, <b>nhấp đúp</b>: phóng to/thu nhỏ · <b>⤢</b> / phím <b>0</b>: toàn cảnh · <b>Q / E</b> hoặc <b>kéo chuột phải</b>: xoay</li>
+    <li>Ở góc 🏰, zoom sát mặt đất sẽ nhìn ngang như Clash of Clans; kéo ra xa camera tự ngẩng dần thành bản đồ.</li>
+    <li>🏰 góc nhìn chiến thuật kiểu Clash of Clans · 👁️ nhìn thẳng từ trên xuống toàn bản đồ</li>
+    <li>Chọn quyền năng bên trái, <b>click lên bản đồ</b> để thi triển. Băng hà & nóng lên tác động toàn cầu ngay khi bấm.</li>
+    <li><b>Thẻ giải thích</b> (G): bật/tắt việc tự hiện thẻ khi có sự kiện lịch sử; khi tắt, bấm vào sự kiện trong Biên niên sử để đọc.</li>
+    <li><b>🧩 Mảng</b> (P): xem các mảng kiến tạo. <b>Space</b>: tạm dừng · <b>1–4</b>: tốc độ · <b>H</b>: ẩn bảng · <b>Esc</b>: bỏ chọn</li>
+  </ul>
+  <p>Mỗi sự kiện lớn (siêu lục địa Pangaea, khủng long, thiên thạch Chicxulub, kỷ băng hà…) hiện một thẻ giải thích. Thanh niên đại ở dưới cho biết bạn đang ở đâu trong lịch sử.</p>
+  <button class="btn" id="helpClose">Bắt đầu</button>
+</div>
+<div id="loading">Đang nhào nặn Trái Đất…</div>
+
+<script src="js/earthdata.js"></script>
+<script src="js/world.js"></script>
+<script src="js/tectonics.js"></script>
+<script src="js/history.js"></script>
+<script src="js/events.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script>
+  setTimeout(() => { const l = document.getElementById('loading'); if (l && l.style.display !== 'none') l.textContent = 'Không tải được Three.js — cần kết nối Internet để chạy trò chơi.'; }, 15000);
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mergeGeometries as mergeRaw } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const G = window.GodSim, EVENTS = window.GOD_EVENTS, ORDER = window.GOD_POWER_ORDER, HIST = G.HISTORY, SC = window.GOD_SCALE;
+const { clamp, smooth } = G;
+const TPS = [0, 6, 18, 45, 110];      // tick mô phỏng mỗi giây theo tốc độ
+let world = new G.World();
+const W = world.W, H = world.H, C = W * H, HX = (W - 1) / 2, HZ = (H - 1) / 2;
+const HS = 9;                         // phóng đại độ cao
+const $ = (id) => document.getElementById(id);
+const mergeGeometries = (list) => mergeRaw(list.map((g) => (g.index ? g.toNonIndexed() : g)));
+const hash = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+const wx = (x) => ((x % W) + W) % W;
+
+// ======================================================================= cảnh & camera
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+$('app').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x05070f);
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.5, 3000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.12;
+controls.screenSpacePanning = false; controls.zoomToCursor = true; controls.zoomSpeed = 1.6;
+controls.mouseButtons = { LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN };
+
+// Góc chiến thuật: góc nghiêng thay đổi theo độ zoom — sát mặt đất nhìn ngang (kiểu Clash of Clans),
+// càng kéo ra xa càng nghiêng dần thành bản đồ nhìn từ trên xuống
+const TILT = 0.8, TILT_NEAR = 1.08, TILT_FAR = 0.3, NEAR_D = 6, FAR_D = 330;
+const tiltFor = (d) => TILT_NEAR + (TILT_FAR - TILT_NEAR) * smooth(18, FAR_D * 0.85, d);
+let view = 'tac', rotLeft = 0, zoomGoal = null;
+function setView(v, keepTarget) {
+  view = v; rotLeft = 0;
+  document.querySelectorAll('#views button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  const t = keepTarget ? controls.target.clone() : new THREE.Vector3(0, 0, 0);
+  if (v === 'tac') {
+    controls.minPolarAngle = controls.maxPolarAngle = TILT;
+    controls.minAzimuthAngle = -Infinity; controls.maxAzimuthAngle = Infinity;
+    controls.minDistance = NEAR_D; controls.maxDistance = FAR_D;
+    const d = 75, a = tiltFor(d); controls.target.copy(t); t.y = 0;
+    controls.minPolarAngle = controls.maxPolarAngle = a;
+    camera.position.set(t.x, Math.cos(a) * d, t.z + Math.sin(a) * d);
+  } else {
+    controls.minPolarAngle = controls.maxPolarAngle = 0.0001;
+    controls.minAzimuthAngle = controls.maxAzimuthAngle = 0;
+    controls.minDistance = 8; controls.maxDistance = 420;
+    controls.target.set(0, 0, 0);
+    camera.position.set(0, 380 * Math.min(1.4, 1.6 / camera.aspect), 0.04);
+  }
+  controls.update();
+}
+function clampPan() {
+  const t = controls.target, dx = clamp(t.x, -HX, HX) - t.x, dz = clamp(t.z, -HZ, HZ) - t.z, dy = -t.y;
+  if (dx || dy || dz) { t.x += dx; t.y += dy; t.z += dz; camera.position.x += dx; camera.position.y += dy; camera.position.z += dz; }
+}
+// Zoom mượt tới một khoảng cách (và tùy chọn: hướng về một điểm)
+function zoomBy(f, point) {
+  const d = camera.position.distanceTo(controls.target);
+  zoomGoal = { d: clamp(d * f, controls.minDistance, controls.maxDistance), p: point ? point.clone().setY(0) : null };
+}
+function stepZoom(dt) {
+  if (!zoomGoal) return;
+  const k = Math.min(1, dt * 8), off = camera.position.clone().sub(controls.target);
+  const d = off.length(), nd = d + (zoomGoal.d - d) * k;
+  if (zoomGoal.p) { const mv = zoomGoal.p.clone().sub(controls.target).multiplyScalar(k); controls.target.add(mv); }
+  camera.position.copy(controls.target).add(off.setLength(nd));
+  if (Math.abs(nd - zoomGoal.d) < 0.05 && (!zoomGoal.p || zoomGoal.p.distanceTo(controls.target) < 0.05)) zoomGoal = null;
+}
+function updateTilt() {
+  lights.material.uniforms.uFade.value = 0.25 + 0.75 * smooth(20, 110, camera.position.distanceTo(controls.target));
+  if (view !== 'tac') return;
+  const a = tiltFor(camera.position.distanceTo(controls.target));
+  controls.minPolarAngle = controls.maxPolarAngle = a;
+}
+function stepRotation(dt) {
+  if (Math.abs(rotLeft) < 1e-3) return;
+  const a = rotLeft * Math.min(1, dt * 7);
+  camera.position.sub(controls.target).applyAxisAngle(new THREE.Vector3(0, 1, 0), a).add(controls.target);
+  rotLeft -= a;
+}
+
+const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x4a3a28, 0.75); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff4e0, 1.9); sun.position.set(-60, 160, -80); scene.add(sun);
+const flash = new THREE.PointLight(0xffe6c0, 0, 0, 0); scene.add(flash);
+{ // nền sao (rẻ, chỉ thấy ở rìa)
+  const n = 1800, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, u = Math.random() * 2 - 1, r = 1500, s = Math.sqrt(1 - u * u); p.set([r * s * Math.cos(a), r * u, r * s * Math.sin(a)], i * 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({ size: 1.5, sizeAttenuation: false, color: 0xb8c4ff })));
+}
+
+// ======================================================================= địa hình
+const terrainMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+terrainMat.onBeforeCompile = (sh) => {      // dung nham & lửa tự phát sáng
+  sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float glow;\nvarying float vGlow;')
+    .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow = glow;');
+  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vGlow;')
+    .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0,0.33,0.06)*vGlow*1.5;');
+};
+// Nước: màu theo độ sâu, sóng gợn, phản chiếu nắng, viền bọt sóng ven bờ
+const waterMat = new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 }, uSun: { value: sun.position.clone().normalize() } },
+  vertexShader: `attribute vec3 color; attribute float depth; attribute float shore;
+    varying vec3 vC; varying float vD; varying float vS; varying vec3 vW;
+    void main(){ vC=color; vD=depth; vS=shore; vec4 w=modelMatrix*vec4(position,1.0); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+  fragmentShader: `uniform float uTime; uniform vec3 uSun; varying vec3 vC; varying float vD; varying float vS; varying vec3 vW;
+    void main(){
+      vec2 p=vW.xz;
+      float t=uTime;
+      vec2 g=vec2(cos(p.x*1.7+t*1.3)+0.6*cos(p.x*0.9-p.y*1.1+t*0.9)+0.4*cos(p.y*2.3+t*1.7),
+                  cos(p.y*1.9-t*1.1)+0.6*cos(p.y*0.8+p.x*1.3-t*0.7)+0.4*cos(p.x*2.6-t*1.5));
+      vec3 n=normalize(vec3(g.x*0.07,1.0,g.y*0.07));
+      vec3 V=normalize(cameraPosition-vW);
+      float dif=0.62+0.38*max(dot(n,uSun),0.0);
+      float spec=pow(max(dot(reflect(-uSun,n),V),0.0),70.0)*0.55;
+      float fres=pow(1.0-max(dot(n,V),0.0),3.0)*0.35;
+      vec3 col=vC*dif+vec3(0.55,0.72,0.92)*fres+spec;
+      float foam=vS*(0.55+0.45*sin(t*2.2+(p.x+p.y)*3.0));
+      col=mix(col,vec3(0.92,0.97,1.0),clamp(foam,0.0,1.0)*0.55);
+      gl_FragColor=vec4(col,mix(0.6,0.94,vD));
+    }`,
+  transparent: true, depthWrite: false,
+});
+const rockMat = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+let terr;
+function buildTerrain() {
+  if (terr) { scene.remove(terr.group); terr.group.traverse((o) => o.geometry && o.geometry.dispose()); }
+  const pos = new Float32Array(C * 3);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; pos[i * 3] = x - HX; pos[i * 3 + 2] = y - HZ; }
+  const index = [];
+  for (let y = 0; y < H - 1; y++) for (let x = 0; x < W - 1; x++) { const a = y * W + x, b = a + 1, c = a + W, d = c + 1; index.push(a, c, b, b, c, d); }
+  const tGeo = new THREE.BufferGeometry();
+  tGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  tGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(C * 3), 3));
+  tGeo.setAttribute('glow', new THREE.BufferAttribute(new Float32Array(C), 1));
+  tGeo.setIndex(index);
+  const terrain = new THREE.Mesh(tGeo, terrainMat);
+  const wGeo = new THREE.BufferGeometry();
+  wGeo.setAttribute('position', new THREE.BufferAttribute(pos.slice().map((v, k) => (k % 3 === 1 ? 0 : v)), 3));
+  wGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(C * 3), 3));
+  wGeo.setAttribute('depth', new THREE.BufferAttribute(new Float32Array(C), 1));
+  wGeo.setAttribute('shore', new THREE.BufferAttribute(new Float32Array(C), 1));
+  wGeo.setIndex(index);
+  const water = new THREE.Mesh(wGeo, waterMat); water.renderOrder = 2;
+  // Vách đá quanh rìa bản đồ (tấm đất nổi giữa không gian)
+  const border = [];
+  for (let x = 0; x < W; x++) border.push(x);
+  for (let y = 1; y < H; y++) border.push(y * W + W - 1);
+  for (let x = W - 2; x >= 0; x--) border.push((H - 1) * W + x);
+  for (let y = H - 2; y > 0; y--) border.push(y * W);
+  const n = border.length, sPos = new Float32Array(n * 2 * 3), sCol = new Float32Array(n * 2 * 3), sIdx = [];
+  border.forEach((i, k) => {
+    for (const j of [0, 1]) {
+      sPos[(k * 2 + j) * 3] = pos[i * 3] * (j ? 1.02 : 1); sPos[(k * 2 + j) * 3 + 2] = pos[i * 3 + 2] * (j ? 1.04 : 1);
+      sPos[(k * 2 + j) * 3 + 1] = j ? -16 - hash(i) * 4 : 0;
+      const s = 0.8 + 0.25 * hash(i * 3 + j); sCol.set([0.42 * s * (j ? 0.55 : 1), 0.33 * s * (j ? 0.55 : 1), 0.24 * s * (j ? 0.6 : 1)], (k * 2 + j) * 3);
+    }
+    const a = k * 2, b = ((k + 1) % n) * 2;
+    sIdx.push(a, a + 1, b, b, a + 1, b + 1);
+  });
+  const sGeo = new THREE.BufferGeometry();
+  sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3)); sGeo.setAttribute('color', new THREE.BufferAttribute(sCol, 3)); sGeo.setIndex(sIdx);
+  const skirt = new THREE.Mesh(sGeo, new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide }));
+  const group = new THREE.Group(); group.add(terrain, water, skirt); scene.add(group);
+  for (const g of [tGeo, wGeo, sGeo]) { g.computeBoundingSphere(); g.boundingSphere.radius += 40; }
+  terr = { group, terrain, tGeo, water, wGeo, sGeo, border };
+  updateTerrain();
+}
+
+// Màu bề mặt kiểu ảnh vệ tinh, suy ra từ trạng thái ô
+let showPlates = false;
+const tint = new Float32Array(C); for (let i = 0; i < C; i++) tint[i] = 0.94 + 0.12 * hash(i);
+const _c = new THREE.Color();
+function landColor(i, out, o) {
+  const w = world, elev = w.h[i] - w.seaLevel, t = w.temp[i], m = w.moist[i], f = w.fert[i];
+  let r = 0.42 + 0.12 * f, g = 0.37 + 0.06 * f, b = 0.29;
+  const mix = (cr, cg, cb, k) => { if (k <= 0) return; if (k > 1) k = 1; r += (cr - r) * k; g += (cg - g) * k; b += (cb - b) * k; };
+  if (w.isOcean[i]) {                                           // đáy biển (thấy qua nước nông)
+    const d = clamp(-elev * 4, 0, 1); r = 0.7 - 0.5 * d; g = 0.64 - 0.44 * d; b = 0.48 - 0.3 * d;
+  } else {
+    if (m < 0.32 && t > 6) mix(0.86, 0.72, 0.5, ((0.32 - m) / 0.32) * 0.95);          // sa mạc
+    if (elev > 0.18) mix(0.52, 0.48, 0.45, (elev - 0.18) * 2.2);                       // núi đá
+    if (t < -2) mix(0.6, 0.6, 0.58, 0.4);
+    const gr = w.grass[i];
+    if (gr > 0.004) {
+      let cr = 0.36, cg = 0.58, cb = 0.2;
+      if (m < 0.42) { const k = (0.42 - m) / 0.42; cr += 0.34 * k; cg += 0.06 * k; cb += 0.1 * k; }       // xavan vàng
+      if (t < 6) { const k = Math.min(1, (6 - t) / 10); cr += (0.52 - cr) * k; cg += (0.52 - cg) * k; cb += (0.38 - cb) * k; }   // đài nguyên
+      mix(cr, cg, cb, gr * 1.5);
+    }
+    const tr = w.tree[i];
+    if (tr > 0.01) { if (t > 22) mix(0.08, 0.32, 0.1, tr * 0.9); else if (t < 6) mix(0.11, 0.25, 0.18, tr * 0.9); else mix(0.14, 0.36, 0.14, tr * 0.85); }
+    const hu = w.human[i];
+    if (hu > 0.12 && (w.ma < 0.011 || w.future)) {                                     // đồng ruộng kẻ ô
+      const f2 = hash(i * 31 + 5), k2 = smooth(0.12, 0.5, hu) * 0.85;
+      if (f2 < 0.33) mix(0.82, 0.74, 0.38, k2); else if (f2 < 0.66) mix(0.55, 0.68, 0.28, k2); else mix(0.62, 0.5, 0.34, k2);
+    }
+    if (hu > 0.55 && (w.ma < 0.006 || w.future)) mix(0.6, 0.58, 0.56, (hu - 0.55) * 1.8);   // đô thị
+    if (w.fire[i] > 0) mix(0.12, 0.09, 0.07, w.fire[i]);
+    if (w.plague[i] > 0.05) mix(0.45, 0.3, 0.5, w.plague[i] * 0.3);
+    r *= tint[i]; g *= tint[i]; b *= tint[i];
+  }
+  mix(0.95, 0.97, 1, w.ice[i] * 1.25);
+  mix(0.22, 0.05, 0.02, w.lava[i] * 1.6);
+  if (showPlates) plateTint(i, mix);
+  const cv = Math.max(clamp((w.cloud[i] - 0.6) * 1.4, 0, 1), (w.atmoWater / w.waterTotal) * 0.6);   // bóng mây
+  const k = 1 - 0.25 * cv; out[o] = r * k; out[o + 1] = g * k; out[o + 2] = b * k;
+}
+function plateTint(i, mix) {
+  const p = world.plate[i];
+  _c.setHSL((p * 0.137 + 0.05) % 1, 0.6, 0.55); mix(_c.r, _c.g, _c.b, 0.35);
+  const bt = world.bType[i];
+  if (bt === 1) mix(1, 0.2, 0.15, 0.9); else if (bt === 2) mix(1, 0.85, 0.2, 0.9); else if (bt === 3) mix(0.95, 0.95, 0.95, 0.7);
+}
+function waterColor(i, out, o) {
+  const w = world, dep = w.seaLevel - w.h[i], k = smooth(0, 0.3, dep);
+  let r = 0.16 - 0.12 * k, g = 0.55 - 0.42 * k, b = 0.62 - 0.32 * k;
+  const mix = (cr, cg, cb, q) => { if (q <= 0) return; if (q > 1) q = 1; r += (cr - r) * q; g += (cg - g) * q; b += (cb - b) * q; };
+  mix(0.42, 0.36, 0.22, clamp((w.T - 50) / 50, 0, 1) * 0.7);       // biển nguyên thủy nóng, giàu sắt
+  mix(0.1, 0.42, 0.33, w.sea[i] * 0.25 * (1 - k));
+  mix(0.9, 0.95, 1, w.ice[i] * 1.2);
+  if (showPlates) plateTint(i, mix);
+  out[o] = r; out[o + 1] = g; out[o + 2] = b;
+}
+
+let rainy = [], fireCells = [], time = 0;
+function updateTerrain() {
+  const w = world, { tGeo, wGeo, sGeo, border } = terr;
+  const p = tGeo.attributes.position.array, c = tGeo.attributes.color.array, gl = tGeo.attributes.glow.array;
+  const wc = wGeo.attributes.color.array, wd = wGeo.attributes.depth.array, ws = wGeo.attributes.shore.array;
+  rainy = []; fireCells = [];
+  for (let i = 0; i < C; i++) {
+    p[i * 3 + 1] = w.h[i] * HS;
+    landColor(i, c, i * 3); waterColor(i, wc, i * 3);
+    const dep = w.seaLevel - w.h[i];
+    wd[i] = clamp(dep * 6, 0, 1);
+    ws[i] = dep > 0 && dep < 0.03 && w.ice[i] < 0.3 ? 1 - dep / 0.03 : 0;
+    const lv = Math.min(1, w.lava[i]);
+    gl[i] = lv * (0.55 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.7 + hash(i) * 30))) + w.fire[i] * (0.7 + 0.3 * Math.sin(time * 11 + i));
+    if (w.rain[i] > 0.014 && !w.isOcean[i]) rainy.push(i);
+    if (w.fire[i] > 0.2) fireCells.push(i);
+  }
+  tGeo.attributes.position.needsUpdate = tGeo.attributes.color.needsUpdate = tGeo.attributes.glow.needsUpdate = true;
+  wGeo.attributes.color.needsUpdate = wGeo.attributes.depth.needsUpdate = wGeo.attributes.shore.needsUpdate = true;
+  tGeo.computeVertexNormals();
+  const seaY = w.seaLevel * HS;
+  terr.water.visible = w.oceanVol > 0.5;
+  terr.water.position.y = seaY + 0.03;
+  const sp = sGeo.attributes.position.array;
+  border.forEach((i, k) => { sp[k * 6 + 1] = Math.max(w.h[i] * HS, terr.water.visible ? seaY : -99); });
+  sGeo.attributes.position.needsUpdate = true;
+}
+
+// ======================================================================= cây, động vật, con người (instancing)
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _e = new THREE.Euler();
+const box = (w, h, d, x, y, z, rz = 0) => { const g = new THREE.BoxGeometry(w, h, d); if (rz) g.rotateZ(rz); g.translate(x, y, z); return g; };
+function inst(geo, mat, max) {
+  const m = new THREE.InstancedMesh(geo, mat, max);
+  m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(max * 3).fill(1), 3);
+  m.frustumCulled = false; m.count = 0; scene.add(m); return m;
+}
+const MAXT = 16000, MAXA = 9000, MAXH = 9000;
+const conifer = inst(mergeGeometries([new THREE.ConeGeometry(0.34, 1.15, 6).translate(0, 0.75, 0), box(0.08, 0.25, 0.08, 0, 0.12, 0)]), new THREE.MeshLambertMaterial({ flatShading: true }), MAXT);
+const broad = inst(mergeGeometries([new THREE.IcosahedronGeometry(0.42, 0).translate(0, 0.72, 0), box(0.09, 0.4, 0.09, 0, 0.2, 0)]), new THREE.MeshLambertMaterial({ flatShading: true }), MAXT);
+// Động vật: hình dáng đổi theo thời kỳ (lưỡng cư → bò sát → khủng long → thú có vú)
+const leg = (x, z, h = 0.3, w = 0.07) => box(w, h, w, x, h / 2, z);
+const FAUNA = {
+  amphibian: {
+    herb: mergeGeometries([box(0.5, 0.14, 0.3, 0, 0.12, 0), box(0.2, 0.1, 0.22, 0.3, 0.13, 0), box(0.35, 0.06, 0.08, -0.38, 0.1, 0)]),
+    pred: mergeGeometries([box(0.6, 0.16, 0.3, 0, 0.13, 0), box(0.28, 0.12, 0.24, 0.4, 0.14, 0), box(0.45, 0.06, 0.08, -0.48, 0.1, 0)]),
+    hc: 0x6f9a4a, pc: 0x46603a, hs: 1, ps: 1.1 },
+  reptile: {
+    herb: mergeGeometries([box(0.6, 0.22, 0.3, 0, 0.22, 0), box(0.2, 0.15, 0.18, 0.38, 0.25, 0), box(0.5, 0.08, 0.08, -0.5, 0.18, 0), leg(0.2, 0.12, 0.12), leg(0.2, -0.12, 0.12), leg(-0.2, 0.12, 0.12), leg(-0.2, -0.12, 0.12)]),
+    pred: mergeGeometries([box(0.55, 0.2, 0.26, 0, 0.24, 0), box(0.3, 0.16, 0.2, 0.4, 0.28, 0), box(0.12, 0.35, 0.03, 0, 0.45, 0), box(0.45, 0.07, 0.07, -0.48, 0.2, 0), leg(0.18, 0.1, 0.14), leg(0.18, -0.1, 0.14), leg(-0.18, 0.1, 0.14), leg(-0.18, -0.1, 0.14)]),
+    hc: 0x8b7d4f, pc: 0x9a4b32, hs: 1, ps: 1.1 },
+  dino: {   // khủng long chân thằn lằn cổ dài & khủng long chân thú hai chân
+    herb: mergeGeometries([box(0.9, 0.42, 0.42, 0, 0.62, 0), box(0.6, 0.13, 0.13, 0.62, 0.95, 0, 0.9), box(0.22, 0.12, 0.13, 0.8, 1.22, 0), box(0.8, 0.12, 0.12, -0.75, 0.55, 0, -0.25),
+      leg(0.3, 0.14, 0.45, 0.13), leg(0.3, -0.14, 0.45, 0.13), leg(-0.3, 0.14, 0.45, 0.13), leg(-0.3, -0.14, 0.45, 0.13)]),
+    pred: mergeGeometries([box(0.6, 0.28, 0.24, 0, 0.72, 0, 0.25), box(0.34, 0.24, 0.2, 0.38, 0.95, 0), box(0.65, 0.1, 0.1, -0.55, 0.62, 0, -0.15), leg(0.02, 0.1, 0.55, 0.1), leg(0.02, -0.1, 0.55, 0.1)]),
+    hc: 0x7b8d55, pc: 0x8a4a30, hs: 1.5, ps: 1.3 },
+  mammal: {
+    herb: mergeGeometries([box(0.55, 0.26, 0.22, 0, 0.42, 0), box(0.14, 0.3, 0.12, 0.3, 0.6, 0, -0.3), box(0.2, 0.12, 0.12, 0.38, 0.75, 0), leg(0.2, 0.08, 0.3), leg(0.2, -0.08, 0.3), leg(-0.2, 0.08, 0.3), leg(-0.2, -0.08, 0.3)]),
+    pred: mergeGeometries([box(0.5, 0.2, 0.18, 0, 0.32, 0), box(0.2, 0.16, 0.15, 0.32, 0.4, 0), box(0.3, 0.06, 0.06, -0.36, 0.38, 0, 0.4), leg(0.17, 0.06, 0.22, 0.06), leg(0.17, -0.06, 0.22, 0.06), leg(-0.17, 0.06, 0.22, 0.06), leg(-0.17, -0.06, 0.22, 0.06)]),
+    hc: 0xc9a46e, pc: 0x6e6e78, hs: 1, ps: 1 },
+};
+const herbs = inst(FAUNA.mammal.herb, new THREE.MeshLambertMaterial({ flatShading: true }), MAXA);
+const preds = inst(FAUNA.mammal.pred, new THREE.MeshLambertMaterial({ flatShading: true }), MAXA);
+let faunaKind = '';
+const villages = inst(mergeGeometries([box(0.24, 0.16, 0.2, 0, 0.08, 0), new THREE.ConeGeometry(0.19, 0.14, 4).rotateY(Math.PI / 4).translate(0, 0.23, 0)]), new THREE.MeshLambertMaterial({ flatShading: true }), MAXH);
+const cities = inst(box(0.16, 1, 0.16, 0, 0.5, 0), new THREE.MeshBasicMaterial(), MAXH);
+const MAXL = 3000;
+
+function updateTrees() {
+  const w = world; let nc = 0, nb = 0;
+  const oldTrees = w.ma > 300, flowering = w.ma < 130;
+  for (let i = 0; i < C; i++) {
+    const tr = w.tree[i];
+    if (tr < 0.2 || w.isOcean[i] || w.lava[i] > 0.1) continue;
+    const reps = tr > 0.55 ? 2 : 1, t = w.temp[i];
+    for (let k = 0; k < reps; k++) {
+      const coldTree = t < 9 || (!flowering && !oldTrees && t < 18);
+      const mesh = coldTree ? conifer : broad;
+      if ((coldTree ? nc : nb) >= MAXT) continue;
+      const x = (i % W) + (hash(i * 3 + k) - 0.5) * 0.9, z = ((i / W) | 0) + (hash(i * 7 + k + 1) - 0.5) * 0.9;
+      const sc = 0.55 + tr * 0.8 * (0.7 + 0.6 * hash(i + k * 11));
+      _p.set(x - HX, w.h[i] * HS - 0.05, z - HZ); _s.set(sc, sc * (oldTrees ? 1.5 : 1), sc); _q.setFromEuler(_e.set(0, hash(i) * 6, 0));
+      _m.compose(_p, _q, _s);
+      if (t > 22) _c.setRGB(0.12, 0.42, 0.12); else if (coldTree) _c.setRGB(0.1, 0.3, 0.2); else _c.setRGB(0.18, 0.44, 0.16);
+      if (oldTrees) _c.setRGB(0.2, 0.38, 0.12);
+      if (w.ice[i] > 0.2) _c.lerp(new THREE.Color(0.92, 0.96, 1), Math.min(1, w.ice[i]));
+      if (w.fire[i] > 0.1) _c.setRGB(1, 0.42, 0.08);
+      _c.multiplyScalar(tint[i]);
+      const n = coldTree ? nc++ : nb++;
+      mesh.setMatrixAt(n, _m); mesh.setColorAt(n, _c);
+    }
+  }
+  conifer.count = nc; broad.count = nb;
+  for (const m of [conifer, broad]) { m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true; }
+}
+function updateAnimals() {
+  const w = world, F = w.fauna();
+  if (F.kind === 'none') { herbs.count = preds.count = 0; return; }
+  const set = FAUNA[F.kind];
+  if (faunaKind !== F.kind) { faunaKind = F.kind; herbs.geometry = set.herb; preds.geometry = set.pred; herbs.material.color.set(set.hc); preds.material.color.set(set.pc); }
+  let nh = 0, np = 0;
+  for (let i = 0; i < C; i++) {
+    const hb = w.herb[i], pd = w.pred[i];
+    if ((hb < 0.05 && pd < 0.025) || w.isOcean[i]) continue;
+    const bx = (i % W) - HX, bz = ((i / W) | 0) - HZ, y = w.h[i] * HS;
+    const ch = hb >= 0.05 ? Math.min(2, Math.ceil(hb * 4)) : 0, cp = pd >= 0.025 ? 1 : 0;
+    for (let k = 0; k < ch && nh < MAXA; k++) {
+      const s = hash(i * 5 + k), a = time * 0.08 + s * 40;
+      _p.set(bx + Math.sin(a) * 0.4, y, bz + Math.cos(a * 0.8) * 0.4); _s.setScalar(set.hs * (0.85 + s * 0.3)); _q.setFromEuler(_e.set(0, s * 6.28 + Math.sin(a) * 0.5, 0));
+      herbs.setMatrixAt(nh++, _m.compose(_p, _q, _s));
+    }
+    for (let k = 0; k < cp && np < MAXA; k++) {
+      const s = hash(i * 9 + k + 3), a = time * 0.15 + s * 40;
+      _p.set(bx + Math.sin(a) * 0.45, y, bz + Math.cos(a * 0.9) * 0.45); _s.setScalar(set.ps * (0.9 + s * 0.3)); _q.setFromEuler(_e.set(0, s * 6.28 + a, 0));
+      preds.setMatrixAt(np++, _m.compose(_p, _q, _s));
+    }
+  }
+  herbs.count = nh; preds.count = np;
+  herbs.instanceMatrix.needsUpdate = preds.instanceMatrix.needsUpdate = true;
+}
+function updateHumans() {
+  const w = world; let nv = 0, nc = 0;
+  const urban = w.ma < 0.006 || w.future, industry = w.ma < 0.00025 || w.future;
+  for (let i = 0; i < C; i++) {
+    const hu = w.human[i];
+    if (hu < 0.04 || w.isOcean[i]) continue;
+    const bx = (i % W) - HX, bz = ((i / W) | 0) - HZ, y = w.h[i] * HS;
+    if (urban && hu > 0.4 && hash(i * 7 + 1) < (hu - 0.3) * 1.8) {
+      const n = industry ? 3 : 2;
+      for (let k = 0; k < n && nc < MAXH; k++) {
+        const s = hash(i * 13 + k);
+        _p.set(bx + (s - 0.5) * 0.7, y, bz + (hash(i * 17 + k) - 0.5) * 0.7); _s.set(1, (industry ? 0.5 : 0.25) + s * (industry ? 1.2 : 0.4) * hu, 1); _q.identity();
+        cities.setMatrixAt(nc, _m.compose(_p, _q, _s));
+        _c.setRGB(1, 0.86 + 0.1 * s, 0.6 + 0.3 * s); cities.setColorAt(nc++, _c);
+      }
+    } else if (hash(i * 3) < Math.min(0.9, hu * 3) && nv < MAXH) {
+      _p.set(bx + (hash(i) - 0.5) * 0.6, y, bz + (hash(i + 7) - 0.5) * 0.6); _s.setScalar(1.1 + 1.4 * hu); _q.setFromEuler(_e.set(0, hash(i) * 6, 0));
+      villages.setMatrixAt(nv, _m.compose(_p, _q, _s));
+      _c.setRGB(w.ma > 0.011 ? 0.55 : 0.75, w.ma > 0.011 ? 0.42 : 0.55, 0.32); villages.setColorAt(nv++, _c);
+    }
+  }
+  villages.count = nv; cities.count = nc;
+  for (const m of [villages, cities]) { m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true; }
+  // Ánh đèn đô thị (thấy rõ cả khi thu nhỏ toàn bản đồ)
+  const la = lights.geometry.attributes; let nl = 0;
+  if (urban || w.ma < 0.011) for (let i = 0; i < C && nl < MAXL; i++) {
+    const hu = w.human[i]; if (hu < 0.3 || w.isOcean[i]) continue;
+    la.position.array.set([(i % W) - HX, w.h[i] * HS + 0.6, ((i / W) | 0) - HZ], nl * 3);
+    la.size.array[nl] = (industry ? 2.4 : urban ? 1.6 : 1) * (0.5 + hu);
+    la.alpha.array[nl] = (industry ? 0.95 : urban ? 0.7 : 0.45) * smooth(0.3, 0.8, hu);
+    la.ccolor.array.set(industry ? [1, 0.85, 0.5] : [1, 0.65, 0.3], nl * 3); nl++;
+  }
+  for (let k = nl; k < lights.userData.used; k++) la.alpha.array[k] = 0;
+  lights.userData.used = nl;
+  la.position.needsUpdate = la.size.needsUpdate = la.alpha.needsUpdate = la.ccolor.needsUpdate = true;
+  updateCityLabels();
+}
+// Nhãn tên thành phố (kích thước cố định trên màn hình)
+const labelMap = new Map();
+function makeLabel(text, modern) {
+  const c = document.createElement('canvas'), g = c.getContext('2d'), fs = 26;
+  g.font = `600 ${fs}px system-ui, sans-serif`;
+  const w = Math.ceil(g.measureText(text).width) + 34; c.width = w; c.height = 40;
+  g.font = `600 ${fs}px system-ui, sans-serif`;
+  g.fillStyle = 'rgba(10,14,28,0.72)'; g.beginPath(); g.roundRect(0, 2, w, 36, 10); g.fill();
+  g.fillStyle = modern ? '#ffe7a8' : '#ffc28a'; g.beginPath(); g.arc(15, 20, 6, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(text, 27, 21);
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, sizeAttenuation: false, transparent: true }));
+  sp.scale.set((w / 40) * 0.02, 0.02, 1); sp.center.set(0.08, -0.3); sp.renderOrder = 20; scene.add(sp); return sp;
+}
+function updateCityLabels() {
+  const list = world.cities || [], keep = new Set();
+  for (const c of list) {
+    if (world.human[c.i] < 0.05) continue;                  // thành phố bị bỏ hoang
+    keep.add(c.name);
+    let sp = labelMap.get(c.name); if (!sp) { sp = makeLabel(c.name, c.modern); labelMap.set(c.name, sp); }
+    sp.position.set((c.i % W) - HX, world.h[c.i] * HS + 0.8, ((c.i / W) | 0) - HZ);
+  }
+  for (const [n, sp] of labelMap) if (!keep.has(n)) { scene.remove(sp); sp.material.map.dispose(); sp.material.dispose(); labelMap.delete(n); }
+  // Thu nhỏ thì chỉ hiện các thành phố tiêu biểu (thời hiện đại ẩn bớt đô thị cổ) để nhãn không chồng chéo
+  const d = camera.position.distanceTo(controls.target), show = $('cityLabels').checked, modernAge = list.some((x) => x.modern);
+  const MAJOR = ['Tokyo', 'New York', 'London', 'Thượng Hải', 'Delhi', 'Cairo', 'São Paulo', 'Thăng Long – Hà Nội', 'Sydney', 'Lagos', 'Mexico City', 'Moskva'];
+  for (const [n, sp] of labelMap) {
+    const c = list.find((x) => x.name === n);
+    sp.visible = show && (d < 70 || (d < 160 ? (c.modern || !modernAge) : MAJOR.includes(n) || !modernAge));
+  }
+}
+
+// ======================================================================= mưa, khói, hiệu ứng sự kiện
+const softMats = [];
+function softScale() { return renderer.getPixelRatio() * innerHeight / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))); }
+function softMaterial() {
+  const m = new THREE.ShaderMaterial({
+    uniforms: { uScale: { value: softScale() }, uFade: { value: 1 } },
+    vertexShader: `attribute float alpha; attribute float size; attribute vec3 ccolor; uniform float uScale; varying float vA; varying vec3 vC;
+      void main(){ vA=alpha; vC=ccolor; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=size*uScale/-mv.z; gl_Position=projectionMatrix*mv; }`,
+    fragmentShader: `varying float vA; varying vec3 vC; uniform float uFade;
+      void main(){ float d=length(gl_PointCoord-0.5); float a=smoothstep(0.5,0.05,d)*vA*uFade; if(a<0.01) discard; gl_FragColor=vec4(vC,a); }`,
+    transparent: true, depthWrite: false,
+  });
+  softMats.push(m); return m;
+}
+function softPoints(n, mat) {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  g.setAttribute('alpha', new THREE.BufferAttribute(new Float32Array(n), 1));
+  g.setAttribute('size', new THREE.BufferAttribute(new Float32Array(n), 1));
+  g.setAttribute('ccolor', new THREE.BufferAttribute(new Float32Array(n * 3).fill(1), 3));
+  const p = new THREE.Points(g, mat); p.frustumCulled = false; return p;
+}
+
+const lights = softPoints(MAXL, (() => { const m = softMaterial(); m.blending = THREE.AdditiveBlending; return m; })()); lights.userData.used = 0; scene.add(lights);
+const MAXR = 1800;
+const rainGeo = new THREE.BufferGeometry();
+rainGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(MAXR * 6).fill(-9999), 3));
+const rainLines = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({ color: 0xc8defa, transparent: true, opacity: 0.35 }));
+rainLines.frustumCulled = false; scene.add(rainLines);
+const RN = { x: new Float32Array(MAXR), y: new Float32Array(MAXR).fill(-9999), z: new Float32Array(MAXR), v: new Float32Array(MAXR), g: new Float32Array(MAXR) };
+function updateRain(dt) {
+  const w = world, deluge = w.condensing > 0.0004, pa = rainGeo.attributes.position.array;
+  const target = deluge ? MAXR : Math.min(MAXR, rainy.length);
+  for (let k = 0; k < MAXR; k++) {
+    if (k >= target) { if (pa[k * 6 + 1] !== -9999) { pa[k * 6 + 1] = pa[k * 6 + 4] = -9999; RN.y[k] = -9999; } continue; }
+    if (RN.y[k] < RN.g[k] || RN.y[k] < -9000) {
+      const i = deluge ? (Math.random() * C) | 0 : rainy.length ? rainy[(Math.random() * rainy.length) | 0] : -1;
+      if (i < 0) { RN.y[k] = -9999; continue; }
+      RN.x[k] = (i % W) - HX + Math.random() - 0.5; RN.z[k] = ((i / W) | 0) - HZ + Math.random() - 0.5;
+      RN.g[k] = Math.max(w.h[i], w.seaLevel) * HS; RN.y[k] = RN.g[k] + 3 + Math.random() * 4; RN.v[k] = w.temp[i] < 0 ? 3 : 16;
+    }
+    RN.y[k] -= RN.v[k] * dt;
+    pa[k * 6] = pa[k * 6 + 3] = RN.x[k]; pa[k * 6 + 2] = pa[k * 6 + 5] = RN.z[k];
+    pa[k * 6 + 1] = RN.y[k]; pa[k * 6 + 4] = RN.y[k] + (RN.v[k] > 5 ? 0.6 : 0.15);
+  }
+  rainGeo.attributes.position.needsUpdate = true;
+}
+
+const MAXS = 700;
+const smoke = softPoints(MAXS, softMaterial()); scene.add(smoke);
+const SM = { vx: new Float32Array(MAXS), vy: new Float32Array(MAXS), vz: new Float32Array(MAXS), life: new Float32Array(MAXS), max: new Float32Array(MAXS), s0: new Float32Array(MAXS) };
+let smokeCursor = 0;
+function emitSmoke(x, y, z, n, rgb = [0.4, 0.4, 0.42], size = 3, up = 4, spread = 1, life = 3) {
+  const a = smoke.geometry.attributes;
+  for (let q = 0; q < n; q++) {
+    const k = smokeCursor = (smokeCursor + 1) % MAXS;
+    a.position.array.set([x + (Math.random() - 0.5) * spread, y, z + (Math.random() - 0.5) * spread], k * 3);
+    SM.vx[k] = (Math.random() - 0.5) * spread * 2; SM.vz[k] = (Math.random() - 0.5) * spread * 2; SM.vy[k] = up * (0.6 + Math.random() * 0.8);
+    SM.life[k] = SM.max[k] = life * (0.7 + Math.random() * 0.6); SM.s0[k] = size;
+    a.ccolor.array.set(rgb, k * 3);
+  }
+}
+function updateSmoke(dt) {
+  const a = smoke.geometry.attributes, p = a.position.array;
+  for (let k = 0; k < MAXS; k++) {
+    if (SM.life[k] <= 0) { a.alpha.array[k] = 0; continue; }
+    SM.life[k] -= dt;
+    const t = SM.life[k] / SM.max[k];
+    p[k * 3] += SM.vx[k] * dt; p[k * 3 + 1] += SM.vy[k] * dt; p[k * 3 + 2] += SM.vz[k] * dt;
+    a.alpha.array[k] = 0.55 * t * Math.min(1, (1 - t) * 6); a.size.array[k] = SM.s0[k] * (1 + (1 - t) * 2.5);
+  }
+  a.position.needsUpdate = a.alpha.needsUpdate = a.size.needsUpdate = a.ccolor.needsUpdate = true;
+}
+
+const cellPos = (x, y, lift = 0) => { const i = world.idx(x, y); return new THREE.Vector3(wx(Math.round(x)) - HX, Math.max(world.h[i], world.seaLevel) * HS + lift, clamp(Math.round(y), 0, H - 1) - HZ); };
+const ringGeo = new THREE.RingGeometry(0.92, 1, 72); ringGeo.rotateX(-Math.PI / 2);
+const pulses = [];
+function pulse(x, y, r, color, dur = 1.2) {
+  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide }));
+  m.position.copy(cellPos(x, y, 0.4)); scene.add(m); pulses.push({ m, t: 0, dur, r });
+}
+function updatePulses(dt) {
+  for (let k = pulses.length - 1; k >= 0; k--) {
+    const p = pulses[k]; p.t += dt; const q = p.t / p.dur;
+    p.m.scale.setScalar(0.5 + p.r * q); p.m.material.opacity = 0.9 * (1 - q);
+    if (q >= 1) { scene.remove(p.m); p.m.material.dispose(); pulses.splice(k, 1); }
+  }
+}
+const bolts = [];
+function spawnBolt(x, y) {
+  const g = cellPos(x, y), pts = [], top = g.y + 10;
+  let cx = g.x, cz = g.z;
+  for (let k = 0; k <= 8; k++) { pts.push(new THREE.Vector3(cx, top - (top - g.y) * (k / 8), cz)); cx += (Math.random() - 0.5) * 1.2; cz += (Math.random() - 0.5) * 1.2; }
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xeef4ff, transparent: true }));
+  scene.add(line); bolts.push({ line, t: 0 });
+  flash.position.set(g.x, g.y + 6, g.z); flash.intensity = Math.max(flash.intensity, 3);
+}
+function updateBolts(dt) {
+  for (let k = bolts.length - 1; k >= 0; k--) {
+    const b = bolts[k]; b.t += dt; b.line.material.opacity = 1 - b.t / 0.25;
+    if (b.t > 0.25) { scene.remove(b.line); b.line.geometry.dispose(); b.line.material.dispose(); bolts.splice(k, 1); }
+  }
+}
+// Bão: cụm mây xoắn thấp, mờ (không che bản đồ); sóng thần: vòng sóng lan
+const storms = new Map(), waves = new Map();
+function makeSpiral() {
+  const n = 220, pts = softPoints(n, softMaterial()), a = pts.geometry.attributes;
+  for (let k = 0; k < n; k++) {
+    const t = Math.random(), ang = (k % 3) * (Math.PI * 2 / 3) + t * 5;
+    a.position.array.set([Math.cos(ang) * t, (Math.random() - 0.5) * 0.05, Math.sin(ang) * t], k * 3);
+    a.alpha.array[k] = 0.7 * (1 - t * 0.6); a.size.array[k] = 3 + (1 - t) * 4;
+  }
+  pts.material.uniforms.uFade.value = 0.45;
+  scene.add(pts); return pts;
+}
+function updateEventVisuals(dt) {
+  const seen = new Set();
+  for (const e of world.events) {
+    if (e.type === 'storm' && e.age < e.dur) {
+      seen.add(e.id);
+      let s = storms.get(e.id); const tgt = cellPos(e.x, e.y, HS * 0.7);
+      if (!s) { s = makeSpiral(); storms.set(e.id, s); s.position.copy(tgt); }
+      if (s.position.distanceTo(tgt) > 20) s.position.copy(tgt); else s.position.lerp(tgt, Math.min(1, dt * 3));
+      s.scale.setScalar(e.r * 1.4 * (0.6 + 0.3 * (e.data.s || 1)));
+      s.rotation.y += dt * 1.6 * (world.lat[world.idx(e.x, e.y)] >= 0 ? 1 : -1);
+    }
+    if (e.type === 'tsunami' && e.age < e.dur) {
+      seen.add(e.id);
+      let r = waves.get(e.id);
+      if (!r) { r = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xe8f8ff, transparent: true, depthWrite: false, side: THREE.DoubleSide })); scene.add(r); waves.set(e.id, r); }
+      r.position.set(wx(e.x0) - HX, world.seaLevel * HS + 0.3, e.y0 - HZ);
+      r.scale.setScalar(Math.max(0.5, e.age * 1.3 * SC)); r.material.opacity = 0.9 * (1 - e.age / e.dur);
+    }
+    if (e.type === 'volcano' && e.age < e.dur) {
+      const c = cellPos(e.x, e.y, 0.5);
+      if (Math.random() < 0.7) emitSmoke(c.x, c.y, c.z, 1, [0.28, 0.26, 0.26], 2.5 * (e.data.big ? 2 : 1), 4, 1, 4);
+      if (Math.random() < 0.3) emitSmoke(c.x, c.y, c.z, 1, [1, 0.45, 0.1], 1.2, 6, 0.6, 0.8);
+    }
+  }
+  for (const map of [storms, waves]) for (const [id, obj] of map) {
+    if (seen.has(id)) continue;
+    scene.remove(obj); if (obj.geometry !== ringGeo) obj.geometry.dispose();
+    const mi = softMats.indexOf(obj.material); if (mi >= 0) softMats.splice(mi, 1);
+    obj.material.dispose(); map.delete(id);
+  }
+  if (fireCells.length && Math.random() < 0.6) for (let k = 0; k < 3; k++) {
+    const i = fireCells[(Math.random() * fireCells.length) | 0];
+    emitSmoke((i % W) - HX, world.h[i] * HS + 0.5, ((i / W) | 0) - HZ, 1, [0.35, 0.32, 0.3], 1.6, 3, 0.6, 2.5);
+  }
+}
+
+// Thiên thạch: bay xuống ~1,3 giây rồi mới áp dụng vào mô phỏng
+const anims = [];
+let shake = 0;
+const GLOW = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.3, 'rgba(255,255,255,.5)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+})();
+function launchMeteor(x, y, opts) {
+  const target = cellPos(x, y), start = target.clone().add(new THREE.Vector3((Math.random() - 0.5) * 80, 90, (Math.random() - 0.5) * 80));
+  const body = new THREE.Mesh(new THREE.IcosahedronGeometry(0.6 + (opts.p || 1) * 0.4, 0), new THREE.MeshBasicMaterial({ color: 0xffe2b0 }));
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xff8a30, blending: THREE.AdditiveBlending, depthWrite: false }));
+  glow.scale.setScalar(6 + (opts.p || 1) * 2); body.add(glow); scene.add(body);
+  const myWorld = world;
+  anims.push({ t: 0, dur: 1.3, update(dt) {
+    this.t += dt; const k = Math.min(1, this.t / this.dur);
+    body.position.lerpVectors(start, target, k * k);
+    emitSmoke(body.position.x, body.position.y, body.position.z, 1, [1, 0.55, 0.2], 1.6, 0, 0.3, 0.6);
+    if (k < 1) return false;
+    scene.remove(body); body.geometry.dispose(); body.material.dispose(); glow.material.dispose();
+    if (myWorld === world) world.addEvent('meteor', x, y, opts);
+    return true;
+  } });
+}
+function updateAnims(dt) { for (let k = anims.length - 1; k >= 0; k--) if (anims[k].update(dt)) anims.splice(k, 1); }
+function castEvent(type, x, y, opts = {}) { if (type === 'meteor') launchMeteor(x, y, opts); else world.addEvent(type, x, y, opts); }
+function handleVisual(v) {
+  if (v.kind === 'bolt') return spawnBolt(v.x, v.y);
+  const def = EVENTS[v.type];
+  if (def.kind === 'global') { toast(`${def.icon} ${def.name}`); return; }
+  const c = cellPos(v.x, v.y, 0.5);
+  if (v.type === 'meteor') {
+    shake = Math.max(shake, 0.8 * v.p); flash.position.set(c.x, c.y + 6, c.z); flash.intensity = 8;
+    pulse(v.x, v.y, v.r * 3, 0xffa040, 1.5);
+    emitSmoke(c.x, c.y, c.z, 60 + 30 * v.p, [0.45, 0.38, 0.32], 2.5 * v.p, 6, v.r * 0.6, 4);
+  } else if (v.type === 'earthquake') {
+    shake = Math.max(shake, 0.6 * v.p); pulse(v.x, v.y, v.r * 2.5, def.color, 1.6);
+    emitSmoke(c.x, c.y, c.z, 25, [0.55, 0.45, 0.35], 1.8, 1.5, v.r, 2.5);
+  } else if (v.type === 'volcano') {
+    pulse(v.x, v.y, v.r * 1.5, def.color);
+    const e = world.events.find((q) => q.id === v.id); if (e && v.p > 1.4) e.data.big = true;
+  } else if (v.type !== 'tsunami' && v.type !== 'storm') pulse(v.x, v.y, v.r, def.color);
+}
+
+// ======================================================================= tương tác
+const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+const brush = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.75, depthTest: false }));
+brush.renderOrder = 10; brush.visible = false; scene.add(brush);
+let tool = null, hoverCell = -1, downAt = null, lastMove = 0;
+function pickCell(ev) {
+  mouse.set((ev.clientX / innerWidth) * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1);
+  raycaster.setFromCamera(mouse, camera);
+  const hit = raycaster.intersectObject(terr.terrain, false)[0];
+  if (!hit) return null;
+  const x = clamp(Math.round(hit.point.x + HX), 0, W - 1), y = clamp(Math.round(hit.point.z + HZ), 0, H - 1);
+  return { x, y, i: y * W + x };
+}
+renderer.domElement.addEventListener('pointerdown', (ev) => { downAt = { x: ev.clientX, y: ev.clientY }; });
+renderer.domElement.addEventListener('pointerup', (ev) => {
+  if (!downAt || ev.button !== 0) return;
+  const moved = Math.hypot(ev.clientX - downAt.x, ev.clientY - downAt.y); downAt = null;
+  if (moved > 6 || !tool) return;
+  const c = pickCell(ev);
+  if (c) castEvent(tool, c.x, c.y, { r: +$('radius').value, p: +$('power').value });
+});
+renderer.domElement.addEventListener('pointermove', (ev) => {
+  const now = performance.now(); if (now - lastMove < 60) return; lastMove = now;
+  const c = pickCell(ev), tip = $('tooltip');
+  if (!c) { brush.visible = false; tip.style.display = 'none'; hoverCell = -1; return; }
+  hoverCell = c.i;
+  brush.visible = !!tool;
+  if (tool) { brush.position.copy(cellPos(c.x, c.y, 0.5)); brush.scale.setScalar(+$('radius').value); brush.material.color.set(EVENTS[tool].color); }
+  tip.style.display = 'block';
+  tip.style.left = Math.min(innerWidth - 310, ev.clientX + 16) + 'px'; tip.style.top = Math.min(innerHeight - 160, ev.clientY + 16) + 'px';
+  renderTooltip();
+});
+renderer.domElement.addEventListener('pointerleave', () => { $('tooltip').style.display = 'none'; brush.visible = false; hoverCell = -1; });
+
+const pct = (v) => Math.round(v * 100) + '%';
+function renderTooltip() {
+  if (hoverCell < 0) return;
+  const c = world.cellInfo(hoverCell), F = world.fauna(), FL = world.flora();
+  const ll = `${Math.abs(c.lat).toFixed(0)}°${c.lat >= 0 ? 'B' : 'N'} ${Math.abs(c.lon).toFixed(0)}°${c.lon >= 0 ? 'Đ' : 'T'}`;
+  const parts = [`<b>${c.biome}</b> · ${c.temp > 300 ? Math.round(c.temp) : c.temp.toFixed(1)}°C · <span style="color:var(--muted)">${ll}</span>`,
+    `${c.ocean ? 'Độ sâu ' + Math.round(-c.elev).toLocaleString('vi-VN') + ' m' : 'Độ cao ' + Math.round(c.elev).toLocaleString('vi-VN') + ' m · Ẩm ' + pct(c.moist) + ' · Phì ' + pct(c.fert)}`];
+  const life = [];
+  if (c.sea > 0.01) life.push(`🐟 ${FL.sea} ${pct(c.sea)}`);
+  if (c.grass > 0.01) life.push(`🌿 ${pct(c.grass)}`);
+  if (c.tree > 0.01) life.push(`🌳 ${pct(c.tree)}`);
+  if (c.herb > 0.005) life.push(`${F.kind === 'dino' ? '🦕' : '🦌'} ${F.herb}`);
+  if (c.pred > 0.005) life.push(`${F.kind === 'dino' ? '🦖' : '🐺'} ${F.pred}`);
+  if (c.human > 0.02) life.push(`🧑 ${c.human > 0.55 && world.ma < 0.006 ? 'đô thị' : c.human > 0.12 && world.ma < 0.011 ? 'làng & ruộng' : 'bộ lạc săn bắt – hái lượm'} ${pct(c.human)}`);
+  const city = (world.cities || []).find((q) => Math.abs((q.i % W) - (hoverCell % W)) <= 1 && Math.abs(((q.i / W) | 0) - ((hoverCell / W) | 0)) <= 1);
+  if (city) parts[0] += ` · 🏛️ <b>${city.name}</b>`;
+  if (life.length) parts.push(life.join(' · '));
+  const st = [];
+  if (c.lava > 0.05) st.push('🔥 dung nham'); if (c.ice > 0.1) st.push('❄️ băng ' + pct(c.ice));
+  if (c.fire > 0.05) st.push('🔥 đang cháy'); if (c.plague > 0.05) st.push('☣️ dịch bệnh'); if (c.rain > 0.012) st.push('🌧️ mưa');
+  if (st.length) parts.push(st.join(' · '));
+  const BT = ['', ' · 🔴 hội tụ', ' · 🟡 tách giãn', ' · ⚪ trượt ngang'];
+  parts.push(`<span style="color:var(--muted)">🧩 Mảng ${c.plate}${BT[c.boundary]}</span>`);
+  $('tooltip').innerHTML = parts.join('<br>');
+}
+
+// ======================================================================= giao diện
+function selectTool(key) {
+  tool = key;
+  document.querySelectorAll('.power').forEach((b) => b.classList.toggle('on', b.dataset.key === key));
+  if (key) {
+    const d = EVENTS[key], r = Math.round(d.r * SC); $('radius').value = r; $('rv').textContent = r;
+    $('powerDesc').innerHTML = `<b>${d.icon} ${d.name}</b><br>${d.desc}<br><i>Click lên bản đồ để thi triển.</i>`;
+  } else {
+    brush.visible = false;
+    $('powerDesc').textContent = 'Lịch sử Trái Đất tự diễn ra đúng như thật. Chọn một quyền năng rồi click lên bản đồ để can thiệp — dòng lịch sử sẽ rẽ nhánh theo trạng thái hành tinh lúc đó.';
+  }
+}
+function flashBtn(b) { b.classList.remove('flash'); void b.offsetWidth; b.classList.add('flash'); }
+for (const key of [...ORDER, 'random']) {
+  const d = key === 'random' ? { icon: '🎲', name: 'Ngẫu nhiên', kind: 'random', desc: 'Một sự kiện bất kỳ ở một nơi bất kỳ.' } : EVENTS[key];
+  const b = document.createElement('button');
+  b.className = 'power' + (d.kind !== 'local' ? ' global' : ''); b.dataset.key = key; b.title = d.desc;
+  b.innerHTML = `<span class="ic">${d.icon}</span><span>${d.name}</span>`;
+  b.onclick = () => {
+    if (d.kind === 'global') { world.addEvent(key, HX, HZ, { p: +$('power').value }); flashBtn(b); return; }
+    if (d.kind === 'random') {
+      const locals = ORDER.filter((k) => EVENTS[k].kind === 'local'), type = locals[(Math.random() * locals.length) | 0], i = world.randomCell();
+      castEvent(type, i % W, (i / W) | 0, { p: 0.6 + Math.random() * 0.9, r: EVENTS[type].r * SC }); flashBtn(b); return;
+    }
+    selectTool(tool === key ? null : key);
+  };
+  $('powerGrid').appendChild(b);
+}
+$('radius').oninput = (e) => { $('rv').textContent = e.target.value; brush.scale.setScalar(+e.target.value); };
+$('power').oninput = (e) => { $('pv').textContent = (+e.target.value).toFixed(1); };
+
+let speed = 2, lastSpeed = 2;
+function setSpeed(s) {
+  if (s > 0 && world.ended && !world.future) { world.future = true; hideCard(); toast('🚀 Tiến vào tương lai'); }
+  if (s > 0) lastSpeed = s; speed = s;
+  document.querySelectorAll('#speed button').forEach((b) => b.classList.toggle('on', +b.dataset.s === s));
+}
+document.querySelectorAll('#speed button').forEach((b) => (b.onclick = () => setSpeed(+b.dataset.s)));
+document.querySelectorAll('#views button').forEach((b) => (b.onclick = () => setView(b.dataset.v, true)));
+$('zoomIn').onclick = () => zoomBy(0.6); $('zoomOut').onclick = () => zoomBy(1.65);
+$('zoomFit').onclick = () => { zoomGoal = { d: view === 'tac' ? FAR_D * 0.9 : 380, p: new THREE.Vector3(0, 0, 0) }; };
+renderer.domElement.addEventListener('dblclick', (ev) => { const c = pickCell(ev); zoomBy(0.45, c ? cellPos(c.x, c.y) : null); });
+$('natural').onchange = (e) => { world.natural = e.target.checked; };
+$('helpBtn').onclick = () => $('help').classList.toggle('show');
+$('helpClose').onclick = () => $('help').classList.remove('show');
+function togglePlates() { showPlates = !showPlates; $('plateBtn').classList.toggle('on', showPlates); updateTerrain(); }
+$('plateBtn').onclick = togglePlates;
+function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch { /* bỏ qua */ } }
+function setPanels(left, right) {
+  document.body.classList.toggle('hide-left', !left); document.body.classList.toggle('hide-right', !right);
+  lsSet('godview_panels', JSON.stringify([left, right]));
+}
+const panelsShown = () => [!document.body.classList.contains('hide-left'), !document.body.classList.contains('hide-right')];
+function togglePanels() { const [l, r] = panelsShown(); const show = !(l || r); setPanels(show, show); }
+$('togglePanels').onclick = togglePanels;
+document.querySelectorAll('.collapse').forEach((b) => (b.onclick = () => { const [l, r] = panelsShown(); b.dataset.side === 'left' ? setPanels(false, r) : setPanels(l, false); }));
+$('tabLeft').onclick = () => setPanels(true, panelsShown()[1]);
+$('tabRight').onclick = () => setPanels(panelsShown()[0], true);
+try { const sv = JSON.parse(lsGet('godview_panels')); if (Array.isArray(sv)) setPanels(sv[0], sv[1]); } catch { /* bỏ qua */ }
+$('newWorld').onclick = () => {
+  world = new G.World(); world.natural = $('natural').checked;
+  for (const map of [storms, waves]) { for (const o of map.values()) scene.remove(o); map.clear(); }
+  for (const sp of labelMap.values()) scene.remove(sp); labelMap.clear();
+  anims.length = 0; lastSeq = 0; $('log').innerHTML = ''; hideCard(); buildTerrain(); buildTimeline(); setSpeed(lastSpeed || 2);
+};
+addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space') { e.preventDefault(); setSpeed(speed ? 0 : lastSpeed); }
+  else if (e.key >= '1' && e.key <= '4' && !e.ctrlKey && !e.metaKey) setSpeed(+e.key);
+  else if (e.key === 'Escape') { selectTool(null); hideCard(); }
+  else if (e.key === 'h' || e.key === 'H') togglePanels();
+  else if (e.key === 'p' || e.key === 'P') togglePlates();
+  else if (e.key === 'g' || e.key === 'G') setCardsOn(!$('cardsOn').checked);
+  else if (e.key === '+' || e.key === '=') zoomBy(0.65);
+  else if (e.key === '-' || e.key === '_') zoomBy(1.55);
+  else if (e.key === '0') $('zoomFit').onclick();
+  else if (view === 'tac' && (e.key === 'q' || e.key === 'Q')) rotLeft += Math.PI / 2;
+  else if (view === 'tac' && (e.key === 'e' || e.key === 'E')) rotLeft -= Math.PI / 2;
+});
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); for (const m of softMats) m.uniforms.uScale.value = softScale();
+});
+
+// ---- thời gian & thẻ sự kiện
+function fmtMa(ma) {
+  if (world.future) return `+${(-ma).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} triệu năm nữa`;
+  if (ma <= 0) return 'Hôm nay';
+  if (ma >= 1000) return `${(ma / 1000).toLocaleString('vi-VN', { maximumFractionDigits: 2 })} tỷ năm trước`;
+  if (ma >= 1) return `${ma.toLocaleString('vi-VN', { maximumFractionDigits: ma >= 100 ? 0 : 1 })} triệu năm trước`;
+  const y = ma * 1e6;
+  if (y >= 1000) return `${Math.round(y / 1000).toLocaleString('vi-VN')} nghìn năm trước`;
+  return `Năm ${Math.round(2025 - y)}`;
+}
+let cardOpen = false;
+function showCard(card, ma) {
+  $('cardIcon').textContent = card.icon; $('cardTitle').textContent = card.title;
+  $('cardWhen').textContent = fmtMa(card.ma ?? ma); $('cardText').textContent = card.text;
+  $('card').classList.add('show'); cardOpen = true;
+  $('card').classList.toggle('mini', lsGet('godview_cardmini') === '1'); $('cardMini').textContent = $('card').classList.contains('mini') ? '▴' : '▾';
+}
+function hideCard() { $('card').classList.remove('show'); cardOpen = false; }
+$('cardClose').onclick = () => { hideCard(); if (!speed) setSpeed(lastSpeed); };
+// Bật/tắt tự hiện thẻ giải thích (nhớ cho lần sau)
+function setCardsOn(on) {
+  $('cardsOn').checked = on; lsSet('godview_cards', on ? '' : 'off');
+  if (!on) { hideCard(); toast('🙈 Đã ẩn thẻ giải thích — bấm vào sự kiện trong Biên niên sử để xem lại'); }
+}
+$('cardsOn').checked = lsGet('godview_cards') !== 'off';
+$('cardsOn').onchange = (e) => setCardsOn(e.target.checked);
+$('cardOff').onclick = () => { setCardsOn(false); if (!speed) setSpeed(lastSpeed); };
+$('cardMini').onclick = () => { const m = $('card').classList.toggle('mini'); $('cardMini').textContent = m ? '▴' : '▾'; lsSet('godview_cardmini', m ? '1' : ''); };
+
+const tlPos = (ma) => (HIST.maToTick(ma) / HIST.TOTAL_TICKS) * 100;
+function buildTimeline() {
+  const seg = (el, list) => {
+    el.innerHTML = '';
+    for (const s of list) {
+      const a = tlPos(s.from), b = tlPos(s.to), d = document.createElement('div');
+      d.className = 'tlSeg'; d.style.left = a + '%'; d.style.width = (b - a) + '%'; d.style.background = s.color;
+      d.textContent = s.name.replace(/^(Liên đại|Kỷ) /, ''); d.title = `${s.name}: ${fmtMa(s.from)} → ${s.to ? fmtMa(s.to) : 'nay'}`;
+      el.appendChild(d);
+    }
+  };
+  seg($('tlEon'), HIST.EONS); seg($('tlPer'), HIST.PERIODS);
+  const mk = $('tlMarks'); mk.innerHTML = '';
+  for (const e of HIST.EVENTS) {
+    if (!e.major) continue;
+    const d = document.createElement('div'); d.className = 'tlMark'; d.style.left = tlPos(e.ma) + '%'; d.textContent = e.icon;
+    d.title = `${e.title} — ${fmtMa(e.ma)}`; mk.appendChild(d);
+  }
+}
+
+const STAT_ROWS = [
+  ['T', () => '🌡️ Nhiệt độ', (w) => [(w.T > 300 ? Math.round(w.T) : w.T.toFixed(1)) + '°C', (w.T + 30) / 80, '#ff8a5c']],
+  ['co2', () => '🏭 CO₂', (w) => [Math.round(w.CO2 * 280).toLocaleString('vi-VN') + ' ppm', Math.log10(w.CO2 * 10) / 3, '#c0a0ff']],
+  ['o2', () => '💨 Oxy', (w) => [(w.O2 * 21).toFixed(1) + '%', w.O2 / 1.6, '#7cc8ff']],
+  ['seaL', () => '🌊 Mực nước biển', (w) => [(w.seaLevel > 0 ? '+' : '') + Math.round(w.seaLevel * 8000) + ' m', 0.5 + w.seaLevel * 12, '#3d86b8']],
+  ['ice', () => '❄️ Băng', (w) => [pct(w.stats.iceAvg), w.stats.iceAvg * 3, '#e8f6ff']],
+  ['sea', (w) => '🐟 ' + w.flora().sea, (w) => [pct(w.stats.sea), w.stats.sea / 0.7, '#6fe3c8']],
+  ['grass', (w) => '🌿 ' + w.flora().grass, (w) => [pct(w.stats.grass), w.stats.grass / 0.25, '#9fdc6f']],
+  ['tree', (w) => '🌳 ' + w.flora().tree, (w) => [pct(w.stats.tree), w.stats.tree / 0.25, '#3fa94f']],
+  ['herb', (w) => (w.fauna().kind === 'dino' ? '🦕 ' : '🦌 ') + w.fauna().herb, (w) => [pct(w.stats.herb * 10), w.stats.herb / 0.05, '#f3d28a']],
+  ['pred', (w) => (w.fauna().kind === 'dino' ? '🦖 ' : '🐺 ') + w.fauna().pred, (w) => [pct(w.stats.pred * 30), w.stats.pred / 0.01, '#e0685a']],
+  ['hum', () => '🧑 Dân số loài người', (w) => { const p = w.stats.human > 0 ? 8e9 * Math.pow(w.stats.human / 0.0485, 2) : 0; return [p >= 1e9 ? (p / 1e9).toFixed(1) + ' tỷ' : p >= 1e6 ? (p / 1e6).toFixed(1) + ' tr' : p >= 1 ? Math.round(p / 1000) + ' nghìn' : '—', Math.log10(Math.max(1, p)) / 10, '#ffd27a']; }],
+];
+$('statGrid').innerHTML = STAT_ROWS.map(([id]) => `<div class="row"><span id="l_${id}"></span><div class="bar"><i id="b_${id}"></i></div><span class="v" id="v_${id}"></span></div>`).join('');
+function updateUI() {
+  const e = world.era();
+  $('eraName').textContent = e.name; $('eraSub').textContent = e.sub; $('eraSub').title = e.sub; $('age').textContent = fmtMa(world.ma);
+  for (const [id, label, fn] of STAT_ROWS) {
+    const [txt, v, col] = fn(world);
+    $('l_' + id).textContent = label(world); $('v_' + id).textContent = txt;
+    const b = $('b_' + id); b.style.width = clamp(v, 0, 1) * 100 + '%'; b.style.background = col;
+  }
+  $('tlNeedle').style.left = (world.timeInfo().progress * 100) + '%';
+  renderTooltip();
+}
+const chart = $('chart'), cx = chart.getContext('2d');
+function drawChart() {
+  const Wc = chart.width, Hc = chart.height, h = world.history;
+  cx.clearRect(0, 0, Wc, Hc);
+  if (h.length < 2) return;
+  const series = [['#ff8a5c', (d) => (clamp(d.T, -30, 60) + 30) / 90], ['#c0a0ff', (d) => Math.log10(d.CO2 * 10) / 3], ['#e8f6ff', (d) => d.ice * 3], ['#6fdc6f', (d) => d.plant / 0.5]];
+  cx.lineWidth = 2.5;
+  for (const [col, f] of series) {
+    cx.strokeStyle = col; cx.beginPath();
+    h.forEach((d, k) => { const x = (k / 399) * Wc, y = Hc - 6 - clamp(f(d), 0, 1) * (Hc - 12); k ? cx.lineTo(x, y) : cx.moveTo(x, y); });
+    cx.stroke();
+  }
+}
+let lastSeq = 0, toastTimer = 0;
+function toast(text) { const t = $('toast'); t.textContent = text; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3800); }
+function pollLogs() {
+  const box = $('log');
+  for (const l of world.logs) {
+    if (l.seq <= lastSeq) continue;
+    lastSeq = l.seq;
+    const d = document.createElement('div'); d.className = 'entry ' + l.kind;
+    d.innerHTML = (l.kind === 'effect' ? '' : `<small>${fmtMa(l.ma)}</small>`) + l.text;
+    if (l.card) {
+      d.onclick = () => showCard(l.card, l.ma);
+      if (!warping && $('cardsOn').checked) {
+        showCard(l.card, l.ma);
+        if (l.card.major && $('pauseMajor').checked && speed) setSpeed(0);
+      }
+    } else if (l.kind === 'milestone' || l.kind === 'extinct') toast(l.text);
+    box.prepend(d);
+  }
+  while (box.children.length > 200) box.lastChild.remove();
+}
+
+// ======================================================================= khởi động & vòng lặp
+const warpTicks = Math.min(HIST.TOTAL_TICKS, +new URLSearchParams(location.search).get('tua') || 0);
+let warping = true;
+for (let k = 0; k < warpTicks; k++) { world.step(); world.flushIncoming(); }
+world.visuals.length = 0;
+buildTerrain(); buildTimeline(); setView('tac');
+updateTrees(); updateAnimals(); updateHumans(); updateUI(); drawChart(); pollLogs();
+warping = false;
+$('loading').style.display = 'none';
+if (!warpTicks && !lsGet('godview_seen_help2')) { $('help').classList.add('show'); lsSet('godview_seen_help2', '1'); }
+
+const clock = new THREE.Clock(), shakeOff = new THREE.Vector3();
+let acc = 0, frame = 0;
+function loop() {
+  requestAnimationFrame(loop);
+  const dt = Math.min(0.1, clock.getDelta()); time += dt; frame++;
+  while (world.incoming.length) { const r = world.incoming.shift(); castEvent(r.type, r.x, r.y, r.opts); }
+  if (TPS[speed] && !(world.ended && !world.future)) {
+    acc += dt * TPS[speed];
+    let n = 0; while (acc >= 1 && n < 4) { world.step(); acc -= 1; n++; }
+    if (n >= 4) acc = 0;
+  }
+  while (world.visuals.length) handleVisual(world.visuals.shift());
+  if (frame % 3 === 0) updateTerrain();
+  if (frame % 6 === 0) updateTrees();
+  if (frame % 3 === 1) updateAnimals();
+  if (frame % 12 === 2) updateHumans();
+  if (frame % 10 === 0) { updateUI(); pollLogs(); }
+  if (frame % 30 === 0) drawChart();
+  updateRain(dt); updateSmoke(dt); updateEventVisuals(dt); updateAnims(dt); updatePulses(dt); updateBolts(dt);
+  waterMat.uniforms.uTime.value = time;
+  flash.intensity *= 0.86;
+  camera.position.sub(shakeOff); stepRotation(dt); stepZoom(dt); updateTilt(); controls.update(); clampPan();
+  if (shake > 0.02) { shakeOff.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(shake); shake *= 0.9; } else shakeOff.set(0, 0, 0);
+  camera.position.add(shakeOff);
+  renderer.render(scene, camera);
+}
+loop();
+</script>
+</body>
+</html>
